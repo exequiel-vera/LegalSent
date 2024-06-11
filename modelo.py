@@ -1,12 +1,13 @@
 import os
 import PyPDF2
+import pandas as pd
 from transformers import pipeline
 
 # Definir la ruta a la carpeta que contiene los archivos PDF
 pdf_folder = 'textos_juridicos'
 
-# Crear un pipeline de análisis de sentimientos
-classifier = pipeline('sentiment-analysis', model='nlptown/bert-base-multilingual-uncased-sentiment')
+# Crear un pipeline de análisis de sentimientos con el modelo específico para sentimientos (positivo, negativo, neutro)
+classifier = pipeline('sentiment-analysis', model='cardiffnlp/twitter-roberta-base-sentiment')
 
 def extract_text_from_pdf(pdf_path):
     """
@@ -20,8 +21,19 @@ def extract_text_from_pdf(pdf_path):
             text += page.extract_text()
         return text
 
+def split_into_paragraphs(text):
+    """
+    Divide el texto en párrafos.
+    """
+    paragraphs = text.split('\n')
+    paragraphs = [p for p in paragraphs if p.strip() != '']
+    return paragraphs
+
 # Obtener una lista de todos los archivos PDF en la carpeta
 pdf_files = [f for f in os.listdir(pdf_folder) if f.endswith('.pdf')]
+
+# Crear una lista para almacenar los resultados
+results_list = []
 
 # Leer y clasificar cada archivo PDF
 for pdf_file in pdf_files:
@@ -31,15 +43,31 @@ for pdf_file in pdf_files:
     # Extraer texto del PDF
     text = extract_text_from_pdf(pdf_path)
     
-    # Clasificar el texto
-    results = classifier(text[:512])  # Limitar el texto a los primeros 512 caracteres para la clasificación
+    # Dividir el texto en párrafos
+    paragraphs = split_into_paragraphs(text)
     
-    # Mostrar resultados
-    for result in results:
-        print(f'Texto: {text[:100]}...')  # Mostrar solo los primeros 100 caracteres del texto
-        print(f'Predicción: {result}\n')
+    # Clasificar cada párrafo
+    for paragraph in paragraphs:
+        # Limitar el párrafo a los primeros 512 caracteres para la clasificación
+        short_paragraph = paragraph[:]
+        result = classifier(short_paragraph)[0]
+        
+        # Añadir el resultado a la lista
+        results_list.append({
+            'Archivo': pdf_file,
+            'Párrafo': short_paragraph,
+            'Etiqueta': result['label'],
+            'Confianza': result['score']
+        })
 
-print("Clasificación completada.")
+# Crear un DataFrame de pandas con los resultados
+df = pd.DataFrame(results_list)
+
+# Guardar el DataFrame en un archivo CSV
+output_csv_path = 'resultados_clasificacion.csv'
+df.to_csv(output_csv_path, index=False)
+
+print(f"Clasificación completada. Los resultados se han guardado en {output_csv_path}.")
 
 
 
