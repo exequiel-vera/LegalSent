@@ -2,6 +2,11 @@ import os
 import PyPDF2
 import pandas as pd
 from transformers import pipeline
+import nltk
+from nltk.tokenize import sent_tokenize
+
+# Descargar los datos necesarios para tokenizar oraciones
+nltk.download('punkt')
 
 # Definir la ruta a la carpeta que contiene los archivos PDF
 pdf_folder = 'textos_juridicos'
@@ -21,13 +26,12 @@ def extract_text_from_pdf(pdf_path):
             text += page.extract_text()
         return text
 
-def split_into_paragraphs(text):
+def split_into_sentences(text):
     """
-    Divide el texto en párrafos.
+    Divide el texto en oraciones.
     """
-    paragraphs = text.split('\n')
-    paragraphs = [p for p in paragraphs if p.strip() != '']
-    return paragraphs
+    sentences = sent_tokenize(text)
+    return sentences
 
 # Obtener una lista de todos los archivos PDF en la carpeta
 pdf_files = [f for f in os.listdir(pdf_folder) if f.endswith('.pdf')]
@@ -43,19 +47,19 @@ for pdf_file in pdf_files:
     # Extraer texto del PDF
     text = extract_text_from_pdf(pdf_path)
     
-    # Dividir el texto en párrafos
-    paragraphs = split_into_paragraphs(text)
+    # Dividir el texto en oraciones
+    sentences = split_into_sentences(text)
     
-    # Clasificar cada párrafo
-    for paragraph in paragraphs:
-        # Limitar el párrafo a los primeros 512 caracteres para la clasificación
-        short_paragraph = paragraph[:]
-        result = classifier(short_paragraph)[0]
+    # Clasificar cada oración
+    for sentence in sentences:
+        # Limitar la oración a los primeros 512 caracteres para la clasificación
+        short_sentence = sentence[:512]
+        result = classifier(short_sentence)[0]
         
         # Añadir el resultado a la lista
         results_list.append({
             'Archivo': pdf_file,
-            'Párrafo': short_paragraph,
+            'Oración': short_sentence,
             'Etiqueta': result['label'],
             'Confianza': result['score']
         })
@@ -67,27 +71,32 @@ df = pd.DataFrame(results_list)
 output_csv_path = 'resultados_clasificacion.csv'
 df.to_csv(output_csv_path, index=False)
 
+# Crear un nuevo DataFrame para las estadísticas por archivo
+summary_list = []
+
+for pdf_file in pdf_files:
+    file_df = df[df['Archivo'] == pdf_file]
+    label_counts = file_df['Etiqueta'].value_counts()
+    total_labels = label_counts.sum()
+    label_0_count = label_counts.get('LABEL_0', 0)
+    label_1_count = label_counts.get('LABEL_1', 0)
+    label_2_count = label_counts.get('LABEL_2', 0)
+    label_1_percentage = (label_1_count / total_labels) * 100 if total_labels > 0 else 0
+    
+    summary_list.append({
+        'Archivo': pdf_file,
+        'Label_0': label_0_count,
+        'Label_1': label_1_count,
+        'Label_2': label_2_count,
+        'Porcentaje_Label_1': label_1_percentage
+    })
+
+# Crear un DataFrame de pandas con el resumen
+summary_df = pd.DataFrame(summary_list)
+
+# Guardar el DataFrame de resumen en un archivo CSV
+summary_csv_path = 'resumen_clasificacion.csv'
+summary_df.to_csv(summary_csv_path, index=False)
+
 print(f"Clasificación completada. Los resultados se han guardado en {output_csv_path}.")
-
-
-
-# import fitz  # PyMuPDF
-
-# # Abre el documento PDF
-# import os
-
-# # Define la ruta del documento PDF
-# carpeta = 'textos_juridicos'
-# archivo = '128-2023 (MEcheverria) TIE Hamilton Sumarán y José Juypa.pdf'
-# ruta_pdf = os.path.join(carpeta, archivo)
-
-# document = fitz.open(ruta_pdf)
-
-# # Extrae texto de cada página
-# for page_num in range(document.page_count):
-#     page = document.load_page(page_num)
-#     text = page.get_text('text')
-#     print(f"Texto de la página {page_num + 1}:\n{text}\n")
-
-# # Cierra el documento
-# document.close()
+print(f"Resumen completado. El resumen se ha guardado en {summary_csv_path}.")
