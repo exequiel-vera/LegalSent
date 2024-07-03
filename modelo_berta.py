@@ -5,6 +5,7 @@ from transformers import pipeline
 import nltk
 from nltk.tokenize import sent_tokenize
 
+
 # Descargar los datos necesarios para tokenizar oraciones
 nltk.download('punkt')
 
@@ -26,6 +27,8 @@ def extract_text_from_pdf(pdf_path):
             text += page.extract_text()
         return text
 
+
+
 def split_into_sentences(text):
     """
     Divide el texto en oraciones.
@@ -38,6 +41,7 @@ pdf_files = [f for f in os.listdir(pdf_folder) if f.endswith('.pdf')]
 
 # Crear una lista para almacenar los resultados
 results_list = []
+
 
 # Leer y clasificar cada archivo PDF
 for pdf_file in pdf_files:
@@ -55,21 +59,21 @@ for pdf_file in pdf_files:
         # Limitar la oración a los primeros 512 caracteres para la clasificación
         short_sentence = sentence[:512]
         result = classifier(short_sentence)[0]
-        
         # Añadir el resultado a la lista
         results_list.append({
             'Archivo': pdf_file,
-            'Oración': short_sentence,
+            'Oración': sentence,
             'Etiqueta': result['label'],
             'Confianza': result['score']
         })
 
-# Crear un DataFrame de pandas con los resultados
+
+# Convertir los resultados a un DataFrame de pandas
 df = pd.DataFrame(results_list)
 
-# Guardar el DataFrame en un archivo CSV
-output_csv_path = 'resultados_clasificacion.csv'
-df.to_csv(output_csv_path, index=False)
+# # Guardar el DataFrame en un archivo 
+output_xlsx = 'resultados_clasificacion.xlsx'
+df.to_excel(output_xlsx, index=False)
 
 # Crear un nuevo DataFrame para las estadísticas por archivo
 summary_list = []
@@ -85,18 +89,18 @@ for pdf_file in pdf_files:
     
     summary_list.append({
         'Archivo': pdf_file,
-        'Label_0': label_0_count,
-        'Label_1': label_1_count,
-        'Label_2': label_2_count,
-        'Porcentaje_Label_1': label_1_percentage
+        'positivo': label_0_count,
+        'neutral': label_1_count,
+        'negativo': label_2_count,
+        'Porcentaje neutralidad': label_1_percentage
     })
 
 # Crear un DataFrame de pandas con el resumen
 summary_df = pd.DataFrame(summary_list)
 
-# Guardar el DataFrame de resumen en un archivo CSV
-summary_csv_path = 'resumen_clasificacion.csv'
-summary_df.to_csv(summary_csv_path, index=False)
+# Guardar el DataFrame de resumen en un archivo
+summary_excel = 'resumen_clasificacion.xlsx'
+summary_df.to_excel(summary_excel, index=False)
 
-print(f"Clasificación completada. Los resultados se han guardado en {output_csv_path}.")
-print(f"Resumen completado. El resumen se ha guardado en {summary_csv_path}.")
+print(f"Clasificación completada. Los resultados se han guardado en {output_xlsx}.")
+print(f"Resumen completado. El resumen se ha guardado en {summary_excel}.")
