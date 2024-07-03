@@ -71,6 +71,16 @@ for pdf_file in pdf_files:
 # Convertir los resultados a un DataFrame de pandas
 df = pd.DataFrame(results_list)
 
+# Mapeo de etiquetas
+etiquetas_traducidas = {
+    'LABEL_0': 'negativo',
+    'LABEL_1': 'neutro',
+    'LABEL_2': 'positivo'
+}
+
+# Crear la nueva columna
+df['Sentimiento'] = df['Etiqueta'].map(etiquetas_traducidas)
+
 # # Guardar el DataFrame en un archivo 
 output_xlsx = 'resultados_clasificacion.xlsx'
 df.to_excel(output_xlsx, index=False)
