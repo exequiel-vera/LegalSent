@@ -73,9 +73,9 @@ df = pd.DataFrame(results_list)
 
 # Mapeo de etiquetas
 etiquetas_traducidas = {
-    'LABEL_0': 'negativo',
+    'LABEL_0': 'positivo',
     'LABEL_1': 'neutro',
-    'LABEL_2': 'positivo'
+    'LABEL_2': 'negativo'
 }
 
 # Crear la nueva columna
