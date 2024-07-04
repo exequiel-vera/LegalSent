@@ -85,9 +85,10 @@ df['Sentimiento'] = df['Etiqueta'].map(etiquetas_traducidas)
 output_xlsx = 'resultados_clasificacion.xlsx'
 df.to_excel(output_xlsx, index=False)
 
-# Crear un nuevo DataFrame para las estadísticas por archivo
-summary_list = []
 
+
+# Crear un resumen de la clasificación
+summary_list = []
 for pdf_file in pdf_files:
     file_df = df[df['Archivo'] == pdf_file]
     label_counts = file_df['Etiqueta'].value_counts()
@@ -95,16 +96,22 @@ for pdf_file in pdf_files:
     label_0_count = label_counts.get('LABEL_0', 0)
     label_1_count = label_counts.get('LABEL_1', 0)
     label_2_count = label_counts.get('LABEL_2', 0)
+    label_0_percentage = (label_0_count / total_labels) * 100 if total_labels > 0 else 0
     label_1_percentage = (label_1_count / total_labels) * 100 if total_labels > 0 else 0
+    label_2_percentage = (label_2_count / total_labels) * 100 if total_labels > 0 else 0
     
     summary_list.append({
         'Archivo': pdf_file,
         'positivo': label_0_count,
         'neutral': label_1_count,
         'negativo': label_2_count,
-        'Porcentaje neutralidad': label_1_percentage
+        'Total etiquetas': total_labels,
+        'Porcentaje positivo': label_0_percentage,
+        'Porcentaje neutral': label_1_percentage,
+        'Porcentaje negativo': label_2_percentage,
     })
 
+    
 # Crear un DataFrame de pandas con el resumen
 summary_df = pd.DataFrame(summary_list)
 
